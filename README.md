@@ -1,17 +1,13 @@
 # ghcp-byok-apim
 
-Reference architecture and Azure Bicep for a GHCP BYOK setup that fronts Microsoft Foundry model deployments with Azure API Management.
+Put Azure API Management in front of a Microsoft Foundry-hosted model so GitHub Copilot can use it through BYOK — without ever handing the model's credentials to the client.
 
-## Use case
+Use this when you want to bring your own model to Copilot but still need to:
 
-This repo shows how to put Azure API Management in front of a Microsoft Foundry-hosted model so GHCP can send OpenAI-compatible requests through a controlled gateway.
-
-That gives you:
-
-- one stable client endpoint
-- managed-identity auth instead of API keys
-- a policy layer for routing, versioning, and future transforms
-- a repeatable IaC path for dev/test/prod
+- **Keep backend keys out of clients.** Copilot authenticates to APIM; APIM authenticates to Foundry with managed identity. No Foundry keys in the repo, env vars, or developer machines.
+- **Expose one stable endpoint.** A single OpenAI-compatible URL that works across VS Code, the Copilot CLI, and GitHub.com (enterprise BYOK).
+- **Govern access centrally.** A policy layer for routing, versioning, throttling, and future request transforms — and a single place to swap or upgrade the model.
+- **Deploy it repeatably.** Bicep IaC so the same gateway path stands up consistently across dev, test, and prod.
 
 ## What’s in the repo
 
