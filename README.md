@@ -16,11 +16,24 @@ That gives you:
 ## What’s in the repo
 
 - `docs/reference-architecture.md` — the end-to-end flow and security model
+- `docs/client-surfaces.md` — where this applies (VS Code, CLI, GitHub.com) and how to configure each
 - `infra/main.bicep` — the deployable APIM + identity + access wiring
 - `infra/modules/foundry-access.bicep` — the scoped role assignment for backend access
 - `infra/openapi/byok-proxy.openapi.json` — the APIM import surface for chat completions
 - `infra/policies/byok-proxy.xml` — the APIM policy that rewrites and authenticates requests
 - `infra/example.bicepparam` — sample deployment parameters
+
+## Where this applies
+
+The proxy is an OpenAI Chat Completions endpoint, so any Copilot BYOK surface can use it. In every case the API key is the **APIM subscription key** and the model is your **Foundry deployment name**.
+
+| Surface | BYOK path | Provider option | Point it here |
+| --- | --- | --- | --- |
+| VS Code | Individual | **OpenAI Compatible** provider (or **Custom endpoint**, Insiders) | `https://<apim-name>.azure-api.net/byok` |
+| Copilot CLI | Individual | `COPILOT_PROVIDER_TYPE=openai` | `https://<apim-name>.azure-api.net/byok` |
+| GitHub.com (+ CLI/IDEs) | Enterprise | **OpenAI-compatible provider** under AI controls | `https://<apim-name>.azure-api.net/byok` |
+
+Full per-surface steps are in [docs/client-surfaces.md](docs/client-surfaces.md). Note that BYOK covers chat/agent only — inline code completions always use GitHub-hosted models.
 
 ## Deploy
 
@@ -71,7 +84,10 @@ This project was checked against the public GitHub Copilot BYOK documentation:
 ## Docs
 
 - [Reference architecture](docs/reference-architecture.md)
+- [Where this applies — VS Code, CLI, GitHub.com](docs/client-surfaces.md)
 - [GitHub Copilot CLI — Using your own LLM models (BYOK)](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models)
+- [AI language models in VS Code (BYOK)](https://code.visualstudio.com/docs/agent-customization/language-models)
+- [Enterprise — Using your LLM provider API keys with Copilot](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-enterprise/use-your-own-api-keys)
 - [GitHub Copilot SDK — BYOK auth](https://github.com/github/copilot-sdk/blob/main/docs/auth/byok.md)
 - [Copilot CLI now supports BYOK and local models (changelog)](https://github.blog/changelog/2026-04-07-copilot-cli-now-supports-byok-and-local-models/)
 - [Azure API Management AI gateway](https://learn.microsoft.com/en-us/azure/api-management/ai-gateway)

@@ -2,7 +2,12 @@
 
 ```mermaid
 flowchart LR
-  GHCP[GHCP client] --> APIM[Azure API Management]
+  subgraph Clients["Copilot BYOK surfaces"]
+    VSCODE[VS Code]
+    CLI[Copilot CLI]
+    WEB[GitHub.com / Enterprise BYOK]
+  end
+  Clients --> APIM[Azure API Management]
   APIM --> MI[Managed identity token]
   APIM --> FOUNDRY[Microsoft Foundry / Azure OpenAI-compatible endpoint]
   FOUNDRY --> MODEL[Hosted model deployment]
@@ -10,14 +15,15 @@ flowchart LR
 
 ## Design
 
-The client talks only to APIM. APIM:
+Any Copilot BYOK surface — VS Code, the Copilot CLI, or GitHub.com (enterprise BYOK) —
+talks only to APIM as an OpenAI Chat Completions endpoint. APIM:
 
 - authenticates to the backend with managed identity
 - rewrites the request to the Foundry deployment path
 - appends the required `api-version`
 - preserves the OpenAI-compatible payload shape
 
-The Foundry resource is treated as the model host. This keeps model access centralized, auditable, and easy to swap without changing the client contract.
+The Foundry resource is treated as the model host. This keeps model access centralized, auditable, and easy to swap without changing the client contract. Because the contract is identical across surfaces, the same gateway serves individual (VS Code, CLI) and enterprise (GitHub.com) BYOK paths without change.
 
 ## Security model
 
@@ -34,29 +40,37 @@ The Foundry resource is treated as the model host. This keeps model access centr
 
 ## Runtime flow
 
-1. GHCP sends an OpenAI-compatible chat request to APIM.
+1. A Copilot BYOK surface (VS Code, CLI, or GitHub.com) sends an OpenAI-compatible chat request to APIM.
 2. APIM acquires an Entra token with managed identity.
 3. APIM rewrites the path to the Foundry deployment endpoint.
 4. Foundry returns the model response through APIM.
 
-## Client configuration (Copilot CLI BYOK)
+## Client configuration
 
-The client side is plain Copilot CLI BYOK environment variables. Because the proxy is published as an OpenAI Chat Completions endpoint, use the `openai` provider type:
+This proxy is published as an OpenAI Chat Completions endpoint, so it plugs into every
+Copilot BYOK surface. In all cases the API key is the **APIM subscription key** and the
+model is your **Foundry deployment name**; the gateway adds the backend token and `api-version`.
 
-```bash
-export COPILOT_PROVIDER_TYPE=openai
-export COPILOT_PROVIDER_BASE_URL=https://<apim-name>.azure-api.net/byok
-export COPILOT_PROVIDER_API_KEY=<apim-subscription-key>
-export COPILOT_MODEL=<your-foundry-deployment-name>
-```
+- **VS Code (individual).** Manage Language Models → **OpenAI Compatible** provider (or **Custom endpoint** on Insiders), base URL `https://<apim-name>.azure-api.net/byok`.
+- **Copilot CLI (individual).** Environment variables with the `openai` provider type:
 
-Copilot appends `/chat/completions` to the base URL. The gateway adds the backend auth token and the `api-version`, so those concerns never reach the client.
+  ```bash
+  export COPILOT_PROVIDER_TYPE=openai
+  export COPILOT_PROVIDER_BASE_URL=https://<apim-name>.azure-api.net/byok
+  export COPILOT_PROVIDER_API_KEY=<apim-subscription-key>
+  export COPILOT_MODEL=<your-foundry-deployment-name>
+  ```
 
-Reference: [Using your own LLM models in GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models).
+  Copilot appends `/chat/completions` to the base URL, matching the proxy operation.
+- **GitHub.com (enterprise).** An enterprise owner registers the proxy once as an **OpenAI-compatible provider** under AI controls; the models then surface on GitHub.com, the CLI, and IDEs under the enterprise name.
+
+Full per-surface steps are in [client-surfaces.md](client-surfaces.md).
 
 ## Constraints and limitations
 
+- **Surface scope.** BYOK applies to chat, agent, and utility tasks only. Inline code completions always use GitHub-hosted models, regardless of surface.
 - **Model capabilities.** The Foundry deployment must support tool calling and streaming; a context window of ≥128k tokens is recommended.
-- **Provider type.** The proxy targets the `openai` provider type at `/byok`. The `azure` provider type expects a `/openai/deployments/<deployment>/chat/completions` path that this proxy does not expose.
-- **Wire API.** Only the Chat Completions wire API is proxied. Models that use the Responses API (Copilot calls `/responses`) need an additional operation.
+- **Provider type.** The proxy targets the `openai` / OpenAI-compatible provider at `/byok`. The `azure` provider type expects a `/openai/deployments/<deployment>/chat/completions` path that this proxy does not expose.
+- **Wire API.** Only the Chat Completions wire API is proxied. Models that use the Responses API (Copilot calls `/responses`) need an additional operation. Enterprise BYOK also requires chat/Completions-style APIs.
 - **Inbound auth.** The sample API sets `subscriptionRequired: false`. Production deployments should require an APIM subscription key and validate it in the inbound policy.
+- **Enterprise BYOK is public preview** and subject to change.
