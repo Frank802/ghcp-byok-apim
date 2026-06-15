@@ -65,9 +65,9 @@ Per the Copilot BYOK docs, the Foundry deployment you target must:
 
 If the model lacks tool calling or streaming, Copilot CLI returns an error.
 
-## Validation against the official docs
+## How this fits GitHub Copilot BYOK
 
-This project was checked against the public GitHub Copilot BYOK documentation:
+How the project maps to the public GitHub Copilot BYOK documentation:
 
 - **Approach is supported.** Copilot BYOK explicitly allows OpenAI-compatible endpoints, and an APIM gateway in front of Foundry is exactly that.
 - **Auth model is split correctly.** The client authenticates to APIM with a key; APIM authenticates to Foundry with managed identity. Backend keys stay out of the client and the repo.
