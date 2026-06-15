@@ -1,0 +1,234 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "17546761717622090835"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for APIM and supporting resources."
+      }
+    },
+    "apimName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the API Management instance."
+      }
+    },
+    "apimPublisherName": {
+      "type": "string",
+      "defaultValue": "GHCP BYOK",
+      "metadata": {
+        "description": "APIM publisher display name."
+      }
+    },
+    "apimPublisherEmail": {
+      "type": "string",
+      "metadata": {
+        "description": "APIM publisher contact email."
+      }
+    },
+    "apimSkuName": {
+      "type": "string",
+      "defaultValue": "Developer",
+      "allowedValues": [
+        "Developer",
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "apimSkuCapacity": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 1
+    },
+    "foundryAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Microsoft Foundry / Azure OpenAI resource name."
+      }
+    },
+    "foundryAccountResourceGroup": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "Resource group that contains the Foundry resource."
+      }
+    },
+    "foundryBackendBaseUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Backend base URL, for example https://contoso.openai.azure.com."
+      }
+    },
+    "foundryDeploymentName": {
+      "type": "string",
+      "metadata": {
+        "description": "Model deployment name inside the Foundry resource."
+      }
+    },
+    "foundryApiVersion": {
+      "type": "string",
+      "defaultValue": "2024-06-01",
+      "metadata": {
+        "description": "Azure OpenAI-compatible API version to send to the backend."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Optional tags applied to deployed resources."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <authentication-managed-identity resource=\"https://cognitiveservices.azure.com/\" output-token-variable-name=\"foundryAccessToken\" />\r\n    <set-header name=\"Authorization\" exists-action=\"override\">\r\n      <value>@(\"Bearer \" + (string)context.Variables[\"foundryAccessToken\"])</value>\r\n    </set-header>\r\n    <set-query-parameter name=\"api-version\" exists-action=\"override\">\r\n      <value>{{foundryApiVersion}}</value>\r\n    </set-query-parameter>\r\n    <rewrite-uri template=\"/openai/deployments/{{foundryDeploymentName}}/chat/completions\" copy-unmatched-params=\"false\" />\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+    "$fxv#1": "{\r\n  \"openapi\": \"3.0.3\",\r\n  \"info\": {\r\n    \"title\": \"BYOK Foundry Proxy\",\r\n    \"version\": \"1.0.0\",\r\n    \"description\": \"OpenAI-compatible proxy surface that APIM publishes to GHCP.\"\r\n  },\r\n  \"paths\": {\r\n    \"/chat/completions\": {\r\n      \"post\": {\r\n        \"operationId\": \"createChatCompletion\",\r\n        \"summary\": \"Proxy a chat completion request\",\r\n        \"requestBody\": {\r\n          \"required\": true,\r\n          \"content\": {\r\n            \"application/json\": {\r\n              \"schema\": {\r\n                \"type\": \"object\",\r\n                \"properties\": {\r\n                  \"messages\": {\r\n                    \"type\": \"array\",\r\n                    \"items\": {\r\n                      \"type\": \"object\"\r\n                    }\r\n                  },\r\n                  \"model\": {\r\n                    \"type\": \"string\"\r\n                  },\r\n                  \"temperature\": {\r\n                    \"type\": \"number\"\r\n                  }\r\n                },\r\n                \"required\": [\r\n                  \"messages\"\r\n                ]\r\n              }\r\n            }\r\n          }\r\n        },\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"A successful completion response\",\r\n            \"content\": {\r\n              \"application/json\": {\r\n                \"schema\": {\r\n                  \"type\": \"object\"\r\n                }\r\n              }\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  }\r\n}\r\n",
+    "apiId": "byok-foundry",
+    "openApiPath": "openapi/byok-proxy.openapi.json",
+    "policyPath": "policies/byok-proxy.xml",
+    "policyXml": "[replace(replace(variables('$fxv#0'), '{{foundryDeploymentName}}', parameters('foundryDeploymentName')), '{{foundryApiVersion}}', parameters('foundryApiVersion'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[parameters('apimName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "[parameters('apimSkuName')]",
+        "capacity": "[parameters('apimSkuCapacity')]"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "publisherName": "[parameters('apimPublisherName')]",
+        "publisherEmail": "[parameters('apimPublisherEmail')]"
+      }
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('apimName'), variables('apiId'))]",
+      "properties": {
+        "displayName": "BYOK Foundry Proxy",
+        "path": "byok",
+        "protocols": [
+          "https"
+        ],
+        "subscriptionRequired": false,
+        "serviceUrl": "[parameters('foundryBackendBaseUrl')]",
+        "format": "openapi+json",
+        "value": "[variables('$fxv#1')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/policies",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('apimName'), variables('apiId'), 'policy')]",
+      "properties": {
+        "format": "xml",
+        "value": "[variables('policyXml')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), variables('apiId'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "foundryAccess",
+      "resourceGroup": "[parameters('foundryAccountResourceGroup')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "foundryAccountName": {
+            "value": "[parameters('foundryAccountName')]"
+          },
+          "apimPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('apimName')), '2023-05-01-preview', 'full').identity.principalId]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.34.44.8038",
+              "templateHash": "2003951483897447632"
+            }
+          },
+          "parameters": {
+            "foundryAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Microsoft Foundry / Azure OpenAI account name."
+              }
+            },
+            "apimPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID for the APIM managed identity."
+              }
+            },
+            "roleDefinitionId": {
+              "type": "string",
+              "defaultValue": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
+              "metadata": {
+                "description": "Built-in role definition ID for Azure OpenAI use."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('foundryAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName')), parameters('apimPrincipalId'), 'cognitive-services-openai-user')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitionId'))]",
+                "principalId": "[parameters('apimPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "apimGatewayUrl": {
+      "type": "string",
+      "value": "[format('https://{0}.azure-api.net', parameters('apimName'))]"
+    },
+    "proxyBasePath": {
+      "type": "string",
+      "value": "[format('https://{0}.azure-api.net/byok', parameters('apimName'))]"
+    },
+    "backendCompletionUrl": {
+      "type": "string",
+      "value": "[format('{0}/openai/deployments/{1}/chat/completions?api-version={2}', parameters('foundryBackendBaseUrl'), parameters('foundryDeploymentName'), parameters('foundryApiVersion'))]"
+    }
+  }
+}

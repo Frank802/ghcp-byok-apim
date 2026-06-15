@@ -1,0 +1,22 @@
+<policies>
+  <inbound>
+    <base />
+    <authentication-managed-identity resource="https://cognitiveservices.azure.com/" output-token-variable-name="foundryAccessToken" />
+    <set-header name="Authorization" exists-action="override">
+      <value>@("Bearer " + (string)context.Variables["foundryAccessToken"])</value>
+    </set-header>
+    <set-query-parameter name="api-version" exists-action="override">
+      <value>{{foundryApiVersion}}</value>
+    </set-query-parameter>
+    <rewrite-uri template="/openai/deployments/{{foundryDeploymentName}}/chat/completions" copy-unmatched-params="false" />
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
