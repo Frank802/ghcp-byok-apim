@@ -1,6 +1,6 @@
 # ghcp-byok-apim
 
-Put Azure API Management in front of a Microsoft Foundry-hosted model so GitHub Copilot can use it through BYOK — without ever handing the model's credentials to the client.
+Put Azure API Management in front of a Microsoft Foundry-hosted model so GitHub Copilot can use it through BYOK.
 
 Use this when you want to bring your own model to Copilot but still need to:
 
@@ -9,15 +9,7 @@ Use this when you want to bring your own model to Copilot but still need to:
 - **Govern access centrally.** A policy layer for routing, versioning, throttling, and future request transforms — and a single place to swap or upgrade the model.
 - **Deploy it repeatably.** Bicep IaC so the same gateway path stands up consistently across dev, test, and prod.
 
-## What’s in the repo
-
-- `docs/reference-architecture.md` — the end-to-end flow and security model
-- `docs/client-surfaces.md` — where this applies (VS Code, CLI, GitHub.com) and how to configure each
-- `infra/main.bicep` — the deployable APIM + identity + access wiring
-- `infra/modules/foundry-access.bicep` — the scoped role assignment for backend access
-- `infra/openapi/byok-proxy.openapi.json` — the APIM import surface for chat completions
-- `infra/policies/byok-proxy.xml` — the APIM policy that rewrites and authenticates requests
-- `infra/example.bicepparam` — sample deployment parameters
+Check out the [reference architecture](docs/reference-architecture.md) for more details on how the pieces fit together.
 
 ## Where this applies
 
@@ -36,20 +28,6 @@ Full per-surface steps are in [docs/client-surfaces.md](docs/client-surfaces.md)
 ```bash
 az deployment group create --resource-group <resource-group> --template-file infra/main.bicep --parameters @infra/example.bicepparam
 ```
-
-## Connect GitHub Copilot CLI
-
-Copilot CLI BYOK points at any OpenAI-compatible endpoint through environment variables. The APIM proxy in this repo is exposed as an OpenAI Chat Completions surface at `/byok`, so use the `openai` provider type:
-
-```bash
-export COPILOT_PROVIDER_TYPE=openai
-export COPILOT_PROVIDER_BASE_URL=https://<apim-name>.azure-api.net/byok
-export COPILOT_PROVIDER_API_KEY=<apim-subscription-key>
-export COPILOT_MODEL=<your-foundry-deployment-name>
-copilot
-```
-
-Copilot appends `/chat/completions` to the base URL, which matches the proxy operation. The gateway injects the managed-identity token and the `api-version`, so the client never handles backend credentials. See [Using your own LLM models in GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models).
 
 ## Model requirements
 
@@ -77,14 +55,10 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - APIM authenticates to the backend with managed identity and the `Cognitive Services OpenAI User` role.
 - The policy forwards OpenAI-compatible chat completion calls to the Foundry deployment.
 
-## Docs
+## Useful docs
 
-- [Reference architecture](docs/reference-architecture.md)
-- [Where this applies — VS Code, CLI, GitHub.com](docs/client-surfaces.md)
+- [AI language models in VS Code (BYOK)](https://code.visualstudio.com/docs/agent-customization/language-models#_bring-your-own-language-model-key)
 - [GitHub Copilot CLI — Using your own LLM models (BYOK)](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models)
-- [AI language models in VS Code (BYOK)](https://code.visualstudio.com/docs/agent-customization/language-models)
 - [Enterprise — Using your LLM provider API keys with Copilot](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-enterprise/use-your-own-api-keys)
-- [GitHub Copilot SDK — BYOK auth](https://github.com/github/copilot-sdk/blob/main/docs/auth/byok.md)
-- [Copilot CLI now supports BYOK and local models (changelog)](https://github.blog/changelog/2026-04-07-copilot-cli-now-supports-byok-and-local-models/)
-- [Azure API Management AI gateway](https://learn.microsoft.com/en-us/azure/api-management/ai-gateway)
-- [Authenticate and authorize access to LLM APIs by using Azure API Management](https://learn.microsoft.com/en-us/azure/api-management/authenticate-authorize-azure-openai)
+- [Azure API Management AI gateway](https://learn.microsoft.com/en-us/azure/api-management/genai-gateway-capabilities)
+- [Import a Microsoft Foundry API](https://learn.microsoft.com/en-us/azure/api-management/azure-ai-foundry-api)

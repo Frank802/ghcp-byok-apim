@@ -20,7 +20,7 @@ There are two distinct BYOK paths:
 In every case the API key is the **APIM subscription key**, and the model identifier is
 your **Foundry deployment name**. The gateway adds the backend token and `api-version`.
 
-## VS Code (individual)
+## VS Code
 
 1. Open the Chat view, open the model picker, and select **Manage Language Models** (or run **Chat: Manage Language Models**).
 2. Select **Add Models**, then choose **OpenAI Compatible**. (On VS Code Insiders you can instead choose **Custom endpoint**, which also speaks Chat Completions.)
@@ -35,7 +35,7 @@ embeddings still use GitHub-hosted models.
 
 See [AI language models in VS Code](https://code.visualstudio.com/docs/agent-customization/language-models).
 
-## Copilot CLI (individual)
+## Copilot CLI
 
 ```bash
 export COPILOT_PROVIDER_TYPE=openai
@@ -49,7 +49,7 @@ Copilot appends `/chat/completions` to the base URL, which matches the proxy ope
 
 See [Using your own LLM models in GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models).
 
-## GitHub.com — Enterprise BYOK (admin)
+## GitHub.com (enterprise only)
 
 An enterprise owner registers the proxy once, and the models become available in Copilot
 Chat on GitHub.com as well as in the CLI and IDEs, listed under the enterprise name.
