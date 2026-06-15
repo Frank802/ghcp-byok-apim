@@ -2,6 +2,17 @@
 
 Reference architecture and Azure Bicep for a GHCP BYOK setup that fronts Microsoft Foundry model deployments with Azure API Management.
 
+## Use case
+
+This repo shows how to put Azure API Management in front of a Microsoft Foundry-hosted model so GHCP can send OpenAI-compatible requests through a controlled gateway.
+
+That gives you:
+
+- one stable client endpoint
+- managed-identity auth instead of API keys
+- a policy layer for routing, versioning, and future transforms
+- a repeatable IaC path for dev/test/prod
+
 ## What’s in the repo
 
 - `docs/reference-architecture.md` — the end-to-end flow and security model
@@ -22,3 +33,9 @@ az deployment group create --resource-group <resource-group> --template-file inf
 - The Foundry/OpenAI resource is expected to already exist.
 - APIM authenticates to the backend with managed identity and the `Cognitive Services OpenAI User` role.
 - The policy forwards OpenAI-compatible chat completion calls to the Foundry deployment.
+
+## Docs
+
+- [Reference architecture](docs/reference-architecture.md)
+- [Azure API Management AI gateway](https://learn.microsoft.com/en-us/azure/api-management/ai-gateway)
+- [Authenticate and authorize access to LLM APIs by using Azure API Management](https://learn.microsoft.com/en-us/azure/api-management/authenticate-authorize-azure-openai)
