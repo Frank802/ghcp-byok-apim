@@ -28,6 +28,40 @@ That gives you:
 az deployment group create --resource-group <resource-group> --template-file infra/main.bicep --parameters @infra/example.bicepparam
 ```
 
+## Connect GitHub Copilot CLI
+
+Copilot CLI BYOK points at any OpenAI-compatible endpoint through environment variables. The APIM proxy in this repo is exposed as an OpenAI Chat Completions surface at `/byok`, so use the `openai` provider type:
+
+```bash
+export COPILOT_PROVIDER_TYPE=openai
+export COPILOT_PROVIDER_BASE_URL=https://<apim-name>.azure-api.net/byok
+export COPILOT_PROVIDER_API_KEY=<apim-subscription-key>
+export COPILOT_MODEL=<your-foundry-deployment-name>
+copilot
+```
+
+Copilot appends `/chat/completions` to the base URL, which matches the proxy operation. The gateway injects the managed-identity token and the `api-version`, so the client never handles backend credentials. See [Using your own LLM models in GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models).
+
+## Model requirements
+
+Per the Copilot BYOK docs, the Foundry deployment you target must:
+
+- support **tool calling** (function calling)
+- support **streaming**
+- ideally provide a context window of **≥128k tokens**
+
+If the model lacks tool calling or streaming, Copilot CLI returns an error.
+
+## Validation against the official docs
+
+This project was checked against the public GitHub Copilot BYOK documentation:
+
+- **Approach is supported.** Copilot BYOK explicitly allows OpenAI-compatible endpoints, and an APIM gateway in front of Foundry is exactly that.
+- **Auth model is split correctly.** The client authenticates to APIM with a key; APIM authenticates to Foundry with managed identity. Backend keys stay out of the client and the repo.
+- **Provider type is `openai`, not `azure`.** With the `azure` provider type, Copilot builds the path `/openai/deployments/<deployment>/chat/completions`, which this proxy does not expose. The `openai` type targeting `/byok` is the intended fit.
+- **Limitation — `responses` wire API.** Newer models use the Responses API, where Copilot calls `/responses` instead of `/chat/completions`. This proxy currently only exposes Chat Completions. Add a `/responses` operation to support those models.
+- **Limitation — inbound auth.** The API is published with `subscriptionRequired: false` for first-run simplicity. For shared or production use, require an APIM subscription and validate the inbound key in policy.
+
 ## Notes
 
 - The Foundry/OpenAI resource is expected to already exist.
@@ -37,5 +71,8 @@ az deployment group create --resource-group <resource-group> --template-file inf
 ## Docs
 
 - [Reference architecture](docs/reference-architecture.md)
+- [GitHub Copilot CLI — Using your own LLM models (BYOK)](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-byok-models)
+- [GitHub Copilot SDK — BYOK auth](https://github.com/github/copilot-sdk/blob/main/docs/auth/byok.md)
+- [Copilot CLI now supports BYOK and local models (changelog)](https://github.blog/changelog/2026-04-07-copilot-cli-now-supports-byok-and-local-models/)
 - [Azure API Management AI gateway](https://learn.microsoft.com/en-us/azure/api-management/ai-gateway)
 - [Authenticate and authorize access to LLM APIs by using Azure API Management](https://learn.microsoft.com/en-us/azure/api-management/authenticate-authorize-azure-openai)
