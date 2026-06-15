@@ -1,6 +1,26 @@
 <policies>
   <inbound>
     <base />
+    <set-variable name="presentedKey" value="@{
+        var auth = context.Request.Headers.GetValueOrDefault("Authorization", "");
+        return auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? auth.Substring("Bearer ".Length).Trim()
+            : "";
+    }" />
+    <choose>
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables["presentedKey"]) || (string)context.Variables["presentedKey"] != "{{byokClientKey}}")">
+        <return-response>
+          <set-status code="401" reason="Unauthorized" />
+          <set-header name="WWW-Authenticate" exists-action="override">
+            <value>Bearer error="invalid_token"</value>
+          </set-header>
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body>{"error":{"message":"Invalid or missing API key.","type":"invalid_request_error","code":"invalid_api_key"}}</set-body>
+        </return-response>
+      </when>
+    </choose>
     <authentication-managed-identity resource="https://cognitiveservices.azure.com/" output-token-variable-name="foundryAccessToken" />
     <set-header name="Authorization" exists-action="override">
       <value>@("Bearer " + (string)context.Variables["foundryAccessToken"])</value>

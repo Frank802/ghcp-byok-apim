@@ -38,6 +38,10 @@ param foundryDeploymentName string
 @description('Azure OpenAI-compatible API version to send to the backend.')
 param foundryApiVersion string = '2024-06-01'
 
+@description('Client API key that callers must present as "Authorization: Bearer <key>". Stored as an APIM secret named value and validated in policy.')
+@secure()
+param byokClientKey string
+
 @description('Optional tags applied to deployed resources.')
 param tags object = {}
 
@@ -83,6 +87,16 @@ resource api 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
   }
 }
 
+resource byokClientKeyNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
+  parent: apim
+  name: 'byokClientKey'
+  properties: {
+    displayName: 'byokClientKey'
+    secret: true
+    value: byokClientKey
+  }
+}
+
 resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-05-01-preview' = {
   parent: api
   name: 'policy'
@@ -90,6 +104,9 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-05-01-pre
     format: 'xml'
     value: policyXml
   }
+  dependsOn: [
+    byokClientKeyNamedValue
+  ]
 }
 
 module foundryAccess 'modules/foundry-access.bicep' = {

@@ -47,7 +47,7 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - **Auth model is split correctly.** The client authenticates to APIM with a key; APIM authenticates to Foundry with managed identity. Backend keys stay out of the client and the repo.
 - **Provider type is `openai`, not `azure`.** With the `azure` provider type, Copilot builds the path `/openai/deployments/<deployment>/chat/completions`, which this proxy does not expose. The `openai` type targeting `/byok` is the intended fit.
 - **Limitation — `responses` wire API.** Newer models use the Responses API, where Copilot calls `/responses` instead of `/chat/completions`. This proxy currently only exposes Chat Completions. Add a `/responses` operation to support those models.
-- **Limitation — inbound auth.** The API is published with `subscriptionRequired: false` for first-run simplicity. For shared or production use, require an APIM subscription and validate the inbound key in policy.
+- **Inbound auth.** OpenAI-compatible clients send the key as `Authorization: Bearer <key>`, which APIM's built-in subscription check never sees (it only reads `Ocp-Apim-Subscription-Key`/`subscription-key`, and that check runs before policy). So the API keeps `subscriptionRequired: false` and the inbound policy instead extracts the bearer token and validates it against the `byokClientKey` secret named value, returning 401 on mismatch. Set `byokClientKey` to a strong secret and hand that value to clients as their API key.
 
 ## Notes
 
