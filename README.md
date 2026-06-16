@@ -56,6 +56,7 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - APIM reaches Foundry through a named **backend entity** (`foundry-backend`) and authenticates with its system-assigned managed identity, which holds the `Cognitive Services OpenAI User` role.
 - The policy validates the client key, attaches the managed-identity token, and routes OpenAI-compatible chat completion calls to the backend entity.
 - **Optional resilience.** The circuit breaker and load-balanced pool are opt-in and not part of the default deployment; enable them only if you need 429 back-off or multi-deployment fan-out.
+- **Enterprise BYOK is public preview** and subject to change.
 
 ## Useful docs
 
