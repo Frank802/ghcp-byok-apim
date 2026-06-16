@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "9956272396020128426"
+      "templateHash": "3795523584484593248"
     }
   },
   "parameters": {
@@ -82,6 +82,13 @@
         "description": "Azure OpenAI-compatible API version to send to the backend."
       }
     },
+    "foundryDeploymentsApiVersion": {
+      "type": "string",
+      "defaultValue": "2024-10-01",
+      "metadata": {
+        "description": "Control-plane API version used to list Foundry deployments for the /models endpoint."
+      }
+    },
     "byokClientKey": {
       "type": "securestring",
       "metadata": {
@@ -97,13 +104,17 @@
     }
   },
   "variables": {
-    "$fxv#0": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <set-variable name=\"presentedKey\" value=\"@{\r\n        var auth = context.Request.Headers.GetValueOrDefault(\"Authorization\", \"\");\r\n        return auth.StartsWith(\"Bearer \", StringComparison.OrdinalIgnoreCase)\r\n            ? auth.Substring(\"Bearer \".Length).Trim()\r\n            : \"\";\r\n    }\" />\r\n    <choose>\r\n      <when condition=\"@(string.IsNullOrEmpty((string)context.Variables[\"presentedKey\"]) || (string)context.Variables[\"presentedKey\"] != \"{{byokClientKey}}\")\">\r\n        <return-response>\r\n          <set-status code=\"401\" reason=\"Unauthorized\" />\r\n          <set-header name=\"WWW-Authenticate\" exists-action=\"override\">\r\n            <value>Bearer error=\"invalid_token\"</value>\r\n          </set-header>\r\n          <set-header name=\"Content-Type\" exists-action=\"override\">\r\n            <value>application/json</value>\r\n          </set-header>\r\n          <set-body>{\"error\":{\"message\":\"Invalid or missing API key.\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}</set-body>\r\n        </return-response>\r\n      </when>\r\n    </choose>\r\n    <authentication-managed-identity resource=\"https://cognitiveservices.azure.com/\" output-token-variable-name=\"foundryAccessToken\" />\r\n    <set-header name=\"Authorization\" exists-action=\"override\">\r\n      <value>@(\"Bearer \" + (string)context.Variables[\"foundryAccessToken\"])</value>\r\n    </set-header>\r\n    <set-backend-service backend-id=\"foundry-backend\" />\r\n    <set-query-parameter name=\"api-version\" exists-action=\"override\">\r\n      <value>{{foundryApiVersion}}</value>\r\n    </set-query-parameter>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
-    "$fxv#1": "{\r\n  \"openapi\": \"3.0.3\",\r\n  \"info\": {\r\n    \"title\": \"BYOK Foundry Proxy\",\r\n    \"version\": \"1.0.0\",\r\n    \"description\": \"OpenAI-compatible proxy surface that APIM publishes to GHCP.\"\r\n  },\r\n  \"paths\": {\r\n    \"/chat/completions\": {\r\n      \"post\": {\r\n        \"operationId\": \"createChatCompletion\",\r\n        \"summary\": \"Proxy a chat completion request\",\r\n        \"requestBody\": {\r\n          \"required\": true,\r\n          \"content\": {\r\n            \"application/json\": {\r\n              \"schema\": {\r\n                \"type\": \"object\",\r\n                \"properties\": {\r\n                  \"messages\": {\r\n                    \"type\": \"array\",\r\n                    \"items\": {\r\n                      \"type\": \"object\"\r\n                    }\r\n                  },\r\n                  \"model\": {\r\n                    \"type\": \"string\"\r\n                  },\r\n                  \"temperature\": {\r\n                    \"type\": \"number\"\r\n                  }\r\n                },\r\n                \"required\": [\r\n                  \"messages\"\r\n                ]\r\n              }\r\n            }\r\n          }\r\n        },\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"A successful completion response\",\r\n            \"content\": {\r\n              \"application/json\": {\r\n                \"schema\": {\r\n                  \"type\": \"object\"\r\n                }\r\n              }\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  }\r\n}\r\n",
+    "$fxv#0": "<policies>\n  <inbound>\n    <base />\n    <set-variable name=\"presentedKey\" value=\"@{\n        var auth = context.Request.Headers.GetValueOrDefault(\"Authorization\", \"\");\n        return auth.StartsWith(\"Bearer \", StringComparison.OrdinalIgnoreCase)\n            ? auth.Substring(\"Bearer \".Length).Trim()\n            : \"\";\n    }\" />\n    <choose>\n      <when condition=\"@(string.IsNullOrEmpty((string)context.Variables[\"presentedKey\"]) || (string)context.Variables[\"presentedKey\"] != \"{{byokClientKey}}\")\">\n        <return-response>\n          <set-status code=\"401\" reason=\"Unauthorized\" />\n          <set-header name=\"WWW-Authenticate\" exists-action=\"override\">\n            <value>Bearer error=\"invalid_token\"</value>\n          </set-header>\n          <set-header name=\"Content-Type\" exists-action=\"override\">\n            <value>application/json</value>\n          </set-header>\n          <set-body>{\"error\":{\"message\":\"Invalid or missing API key.\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}</set-body>\n        </return-response>\n      </when>\n    </choose>\n    <set-backend-service backend-id=\"foundry-backend\" />\n  </inbound>\n  <backend>\n    <base />\n  </backend>\n  <outbound>\n    <base />\n  </outbound>\n  <on-error>\n    <base />\n  </on-error>\n</policies>\n",
+    "$fxv#1": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <send-request mode=\"new\" response-variable-name=\"foundryDeployments\" timeout=\"20\" ignore-error=\"true\">\r\n      <set-url>{{foundryDeploymentsUrl}}</set-url>\r\n      <set-method>GET</set-method>\r\n      <authentication-managed-identity resource=\"https://management.azure.com\" />\r\n    </send-request>\r\n    <choose>\r\n      <when condition=\"@(context.Variables.ContainsKey(&quot;foundryDeployments&quot;) &amp;&amp; ((IResponse)context.Variables[&quot;foundryDeployments&quot;]).StatusCode == 200)\">\r\n        <return-response>\r\n          <set-status code=\"200\" reason=\"OK\" />\r\n          <set-header name=\"Content-Type\" exists-action=\"override\">\r\n            <value>application/json</value>\r\n          </set-header>\r\n          <set-body><![CDATA[@{\r\n              var resp = (IResponse)context.Variables[\"foundryDeployments\"];\r\n              var created = DateTimeOffset.UtcNow.ToUnixTimeSeconds();\r\n              var upstream = resp.Body.As<JObject>(preserveContent: true);\r\n              var deployments = upstream[\"value\"] as JArray ?? new JArray();\r\n              var data = new JArray();\r\n              foreach (var d in deployments) {\r\n                  var id = (string)d[\"name\"];\r\n                  if (string.IsNullOrWhiteSpace(id)) { continue; }\r\n                  data.Add(new JObject {\r\n                      [\"id\"] = id,\r\n                      [\"object\"] = \"model\",\r\n                      [\"created\"] = created,\r\n                      [\"owned_by\"] = (string)(d[\"properties\"]?[\"model\"]?[\"format\"]) ?? \"azure-openai\"\r\n                  });\r\n              }\r\n              return new JObject {\r\n                  [\"object\"] = \"list\",\r\n                  [\"data\"] = data\r\n              }.ToString();\r\n          }]]></set-body>\r\n        </return-response>\r\n      </when>\r\n      <otherwise>\r\n        <return-response>\r\n          <set-status code=\"502\" reason=\"Bad Gateway\" />\r\n          <set-header name=\"Content-Type\" exists-action=\"override\">\r\n            <value>application/json</value>\r\n          </set-header>\r\n          <set-body><![CDATA[@{\r\n              var status = context.Variables.ContainsKey(\"foundryDeployments\")\r\n                  ? ((IResponse)context.Variables[\"foundryDeployments\"]).StatusCode.ToString()\r\n                  : \"no response\";\r\n              return new JObject {\r\n                  [\"error\"] = new JObject {\r\n                      [\"message\"] = \"Failed to list Foundry deployments (upstream status: \" + status + \").\",\r\n                      [\"type\"] = \"api_error\",\r\n                      [\"code\"] = \"deployments_unavailable\"\r\n                  }\r\n              }.ToString();\r\n          }]]></set-body>\r\n        </return-response>\r\n      </otherwise>\r\n    </choose>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+    "$fxv#2": "{\r\n  \"openapi\": \"3.0.3\",\r\n  \"info\": {\r\n    \"title\": \"BYOK Foundry Proxy\",\r\n    \"version\": \"1.0.0\",\r\n    \"description\": \"OpenAI-compatible proxy surface that APIM publishes to GHCP.\"\r\n  },\r\n  \"paths\": {\r\n    \"/models\": {\r\n      \"get\": {\r\n        \"operationId\": \"listModels\",\r\n        \"summary\": \"List the models available through the proxy\",\r\n        \"description\": \"Returns the Foundry deployments on the backend account in OpenAI list-models format. The deployment id is the value clients pass as `model`.\",\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"An OpenAI-compatible list of available models\",\r\n            \"content\": {\r\n              \"application/json\": {\r\n                \"schema\": {\r\n                  \"type\": \"object\",\r\n                  \"properties\": {\r\n                    \"object\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"data\": {\r\n                      \"type\": \"array\",\r\n                      \"items\": {\r\n                        \"type\": \"object\",\r\n                        \"properties\": {\r\n                          \"id\": {\r\n                            \"type\": \"string\"\r\n                          },\r\n                          \"object\": {\r\n                            \"type\": \"string\"\r\n                          },\r\n                          \"created\": {\r\n                            \"type\": \"integer\"\r\n                          },\r\n                          \"owned_by\": {\r\n                            \"type\": \"string\"\r\n                          }\r\n                        }\r\n                      }\r\n                    }\r\n                  }\r\n                }\r\n              }\r\n            }\r\n          }\r\n        }\r\n      }\r\n    },\r\n    \"/chat/completions\": {\r\n      \"post\": {\r\n        \"operationId\": \"createChatCompletion\",\r\n        \"summary\": \"Proxy a chat completion request\",\r\n        \"requestBody\": {\r\n          \"required\": true,\r\n          \"content\": {\r\n            \"application/json\": {\r\n              \"schema\": {\r\n                \"type\": \"object\",\r\n                \"properties\": {\r\n                  \"messages\": {\r\n                    \"type\": \"array\",\r\n                    \"items\": {\r\n                      \"type\": \"object\"\r\n                    }\r\n                  },\r\n                  \"model\": {\r\n                    \"type\": \"string\"\r\n                  },\r\n                  \"temperature\": {\r\n                    \"type\": \"number\"\r\n                  }\r\n                },\r\n                \"required\": [\r\n                  \"messages\"\r\n                ]\r\n              }\r\n            }\r\n          }\r\n        },\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"A successful completion response\",\r\n            \"content\": {\r\n              \"application/json\": {\r\n                \"schema\": {\r\n                  \"type\": \"object\"\r\n                }\r\n              }\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  }\r\n}\r\n",
     "apiId": "byok-foundry",
     "openApiPath": "openapi/byok-proxy.openapi.json",
     "policyPath": "policies/byok-proxy.xml",
+    "modelsPolicyPath": "policies/models.xml",
     "backendId": "foundry-backend",
-    "policyXml": "[replace(variables('$fxv#0'), '{{foundryApiVersion}}', parameters('foundryApiVersion'))]"
+    "policyXml": "[replace(variables('$fxv#0'), '{{foundryApiVersion}}', parameters('foundryApiVersion'))]",
+    "foundryDeploymentsUrl": "[format('{0}subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.CognitiveServices/accounts/{3}/deployments?api-version={4}', environment().resourceManager, subscription().subscriptionId, parameters('foundryAccountResourceGroup'), parameters('foundryAccountName'), parameters('foundryDeploymentsApiVersion'))]",
+    "modelsPolicyXml": "[replace(variables('$fxv#1'), '{{foundryDeploymentsUrl}}', variables('foundryDeploymentsUrl'))]"
   },
   "resources": [
     {
@@ -136,7 +147,7 @@
         ],
         "subscriptionRequired": false,
         "format": "openapi+json",
-        "value": "[variables('$fxv#1')]"
+        "value": "[variables('$fxv#2')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
@@ -179,6 +190,21 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), variables('apiId'))]",
+        "[resourceId('Microsoft.ApiManagement/service/namedValues', parameters('apimName'), 'byokClientKey')]",
+        "[resourceId('Microsoft.ApiManagement/service/backends', parameters('apimName'), variables('backendId'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}/{3}', parameters('apimName'), variables('apiId'), 'listModels', 'policy')]",
+      "properties": {
+        "format": "xml",
+        "value": "[variables('modelsPolicyXml')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), variables('apiId'))]",
+        "[resourceId('Microsoft.ApiManagement/service/apis/policies', parameters('apimName'), variables('apiId'), 'policy')]",
         "[resourceId('Microsoft.ApiManagement/service/namedValues', parameters('apimName'), 'byokClientKey')]",
         "[resourceId('Microsoft.ApiManagement/service/backends', parameters('apimName'), variables('backendId'))]"
       ]
@@ -260,6 +286,10 @@
     "proxyBasePath": {
       "type": "string",
       "value": "[format('https://{0}.azure-api.net/byok', parameters('apimName'))]"
+    },
+    "modelsUrl": {
+      "type": "string",
+      "value": "[format('https://{0}.azure-api.net/byok/models', parameters('apimName'))]"
     },
     "backendCompletionUrl": {
       "type": "string",

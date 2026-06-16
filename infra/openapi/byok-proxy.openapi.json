@@ -6,6 +6,50 @@
     "description": "OpenAI-compatible proxy surface that APIM publishes to GHCP."
   },
   "paths": {
+    "/models": {
+      "get": {
+        "operationId": "listModels",
+        "summary": "List the models available through the proxy",
+        "description": "Returns the Foundry deployments on the backend account in OpenAI list-models format. The deployment id is the value clients pass as `model`.",
+        "responses": {
+          "200": {
+            "description": "An OpenAI-compatible list of available models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "object": {
+                            "type": "string"
+                          },
+                          "created": {
+                            "type": "integer"
+                          },
+                          "owned_by": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/chat/completions": {
       "post": {
         "operationId": "createChatCompletion",

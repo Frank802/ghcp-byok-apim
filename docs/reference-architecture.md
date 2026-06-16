@@ -172,8 +172,9 @@ Notes:
 ## Repo shape
 
 - `infra/main.bicep` provisions the gateway, the `foundry-backend` entity, and the access path.
-- `infra/openapi/byok-proxy.openapi.json` defines the APIM-imported proxy API.
+- `infra/openapi/byok-proxy.openapi.json` defines the APIM-imported proxy API (`/chat/completions` and `/models`).
 - `infra/policies/byok-proxy.xml` validates the client key, attaches the managed-identity token, and routes to the backend entity.
+- `infra/policies/models.xml` is the operation policy for `/models`: it lists the Foundry deployments with the managed identity and returns them in OpenAI list-models format.
 
 ## Runtime flow
 
@@ -181,6 +182,8 @@ Notes:
 2. APIM acquires an Entra token with managed identity.
 3. APIM forwards the request to the `foundry-backend` entity, whose URL targets the Foundry deployment endpoint.
 4. Foundry returns the model response through APIM.
+
+For model discovery, Copilot first calls `GET /byok/models`. APIM handles this without hitting the chat backend: the `/models` operation policy lists the Foundry account's deployments through the Azure Resource Manager control-plane API (`GET .../accounts/{account}/deployments`, managed-identity auth) and returns them in OpenAI list-models format, so the picker shows only the deployments that actually exist on the account.
 
 ## Client configuration
 
