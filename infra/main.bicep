@@ -15,8 +15,11 @@ param apimPublisherEmail string
 @allowed([
   'Developer'
   'Basic'
+  'BasicV2'
   'Standard'
+  'StandardV2'
   'Premium'
+  'PremiumV2'
 ])
 param apimSkuName string = 'Developer'
 
