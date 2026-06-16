@@ -48,6 +48,7 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - **Auth model is split correctly.** The client authenticates to APIM with a key; APIM authenticates to Foundry with managed identity. Backend keys stay out of the client and the repo.
 - **Provider type is `openai`, not `azure`.** With the `azure` provider type, Copilot builds the path `/openai/deployments/<deployment>/chat/completions`, which this proxy does not expose. The `openai` type targeting `/byok` is the intended fit.
 - **Limitation — `responses` wire API.** Newer models use the Responses API, where Copilot calls `/responses` instead of `/chat/completions`. This proxy currently only exposes Chat Completions. Add a `/responses` operation to support those models.
+- **Model discovery.** Copilot's config flow calls `GET /models` to populate its model picker. The proxy answers this itself: an operation policy lists the Foundry account's deployments (data-plane `GET /openai/deployments`, authenticated with the APIM managed identity) and returns them in OpenAI list-models format, so the picker shows only the models actually deployed on your Foundry instance — not the full Foundry catalog. Each deployment `id` is the value clients pass as `model`.
 - **Inbound auth.** OpenAI-compatible clients send the key as `Authorization: Bearer <key>`, which APIM's built-in subscription check never sees (it only reads `Ocp-Apim-Subscription-Key`/`subscription-key`, and that check runs before policy). So the API keeps `subscriptionRequired: false` and the inbound policy instead extracts the bearer token and validates it against the `byokClientKey` secret named value, returning 401 on mismatch. Set `byokClientKey` to a strong secret and hand that value to clients as their API key.
 
 ## Notes
@@ -55,6 +56,7 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - The Foundry/OpenAI resource is expected to already exist.
 - APIM reaches Foundry through a named **backend entity** (`foundry-backend`) and authenticates with its system-assigned managed identity, which holds the `Cognitive Services OpenAI User` role.
 - The policy validates the client key, attaches the managed-identity token, and routes OpenAI-compatible chat completion calls to the backend entity.
+- The `/models` operation is served entirely within APIM: it queries the Foundry account's deployments with the managed identity and returns them in OpenAI list-models format, so Copilot's model picker reflects the real deployments rather than the whole catalog. Tune the lookup with `foundryDeploymentsApiVersion` (default `2023-03-15-preview`).
 - **Optional resilience.** The circuit breaker and load-balanced pool are opt-in and not part of the default deployment; enable them only if you need 429 back-off or multi-deployment fan-out.
 - **Enterprise BYOK is public preview** and subject to change.
 

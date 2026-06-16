@@ -38,6 +38,9 @@ param foundryDeploymentName string
 @description('Azure OpenAI-compatible API version to send to the backend.')
 param foundryApiVersion string = '2024-06-01'
 
+@description('Data-plane API version used to list Foundry deployments for the /models endpoint.')
+param foundryDeploymentsApiVersion string = '2023-03-15-preview'
+
 @description('Client API key that callers must present as "Authorization: Bearer <key>". Stored as an APIM secret named value and validated in policy.')
 @secure()
 param byokClientKey string
@@ -48,8 +51,11 @@ param tags object = {}
 var apiId = 'byok-foundry'
 var openApiPath = 'openapi/byok-proxy.openapi.json'
 var policyPath = 'policies/byok-proxy.xml'
+var modelsPolicyPath = 'policies/models.xml'
 var backendId = 'foundry-backend'
 var policyXml = replace(loadTextContent(policyPath), '{{foundryApiVersion}}', foundryApiVersion)
+var foundryDeploymentsUrl = '${foundryBackendBaseUrl}/openai/deployments?api-version=${foundryDeploymentsApiVersion}'
+var modelsPolicyXml = replace(loadTextContent(modelsPolicyPath), '{{foundryDeploymentsUrl}}', foundryDeploymentsUrl)
 
 resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   name: apimName
@@ -117,6 +123,25 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-05-01-pre
   ]
 }
 
+resource listModelsOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' existing = {
+  parent: api
+  name: 'listModels'
+}
+
+resource listModelsPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2023-05-01-preview' = {
+  parent: listModelsOperation
+  name: 'policy'
+  properties: {
+    format: 'xml'
+    value: modelsPolicyXml
+  }
+  dependsOn: [
+    byokClientKeyNamedValue
+    foundryBackend
+    apiPolicy
+  ]
+}
+
 module foundryAccess 'modules/foundry-access.bicep' = {
   name: 'foundryAccess'
   scope: resourceGroup(foundryAccountResourceGroup)
@@ -128,4 +153,5 @@ module foundryAccess 'modules/foundry-access.bicep' = {
 
 output apimGatewayUrl string = 'https://${apimName}.azure-api.net'
 output proxyBasePath string = 'https://${apimName}.azure-api.net/byok'
+output modelsUrl string = 'https://${apimName}.azure-api.net/byok/models'
 output backendCompletionUrl string = '${foundryBackendBaseUrl}/openai/deployments/${foundryDeploymentName}/chat/completions?api-version=${foundryApiVersion}'

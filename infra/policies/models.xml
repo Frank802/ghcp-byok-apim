@@ -1,0 +1,70 @@
+<policies>
+  <inbound>
+    <base />
+    <send-request mode="new" response-variable-name="foundryDeployments" timeout="20" ignore-error="true">
+      <set-url>{{foundryDeploymentsUrl}}</set-url>
+      <set-method>GET</set-method>
+      <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+    </send-request>
+    <choose>
+      <when condition="@(context.Variables.ContainsKey(&quot;foundryDeployments&quot;) &amp;&amp; ((IResponse)context.Variables[&quot;foundryDeployments&quot;]).StatusCode == 200)">
+        <return-response>
+          <set-status code="200" reason="OK" />
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body><![CDATA[@{
+              var resp = (IResponse)context.Variables["foundryDeployments"];
+              var created = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+              var upstream = resp.Body.As<JObject>(preserveContent: true);
+              var deployments = upstream["data"] as JArray ?? new JArray();
+              var data = new JArray();
+              foreach (var d in deployments) {
+                  var id = (string)d["id"];
+                  if (string.IsNullOrWhiteSpace(id)) { continue; }
+                  data.Add(new JObject {
+                      ["id"] = id,
+                      ["object"] = "model",
+                      ["created"] = created,
+                      ["owned_by"] = (string)(d["owned_by"] ?? d["owner"]) ?? "azure-openai"
+                  });
+              }
+              return new JObject {
+                  ["object"] = "list",
+                  ["data"] = data
+              }.ToString();
+          }]]></set-body>
+        </return-response>
+      </when>
+      <otherwise>
+        <return-response>
+          <set-status code="502" reason="Bad Gateway" />
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body><![CDATA[@{
+              var status = context.Variables.ContainsKey("foundryDeployments")
+                  ? ((IResponse)context.Variables["foundryDeployments"]).StatusCode.ToString()
+                  : "no response";
+              return new JObject {
+                  ["error"] = new JObject {
+                      ["message"] = "Failed to list Foundry deployments (upstream status: " + status + ").",
+                      ["type"] = "api_error",
+                      ["code"] = "deployments_unavailable"
+                  }
+              }.ToString();
+          }]]></set-body>
+        </return-response>
+      </otherwise>
+    </choose>
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
