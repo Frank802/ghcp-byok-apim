@@ -10,7 +10,11 @@ Use this when you want to bring your own model to Copilot but still need to:
 - **Stay resilient under load (optional).** Foundry is reached through a named APIM backend entity, so you can opt into a circuit breaker that backs off on `429 Too Many Requests` and honors `Retry-After` — and combine it with a load-balanced pool to spread traffic across multiple Foundry deployments. Neither is enabled by default.
 - **Deploy it repeatably.** Bicep IaC so the same gateway path stands up consistently across dev, test, and prod.
 
-Check out the [reference architecture](docs/reference-architecture.md) for more details on how the pieces fit together.
+## Documentation
+
+- **[Getting started](docs/getting-started.md)** — step-by-step guide to deploy the gateway and point a Copilot surface at it.
+- **[Reference architecture](docs/reference-architecture.md)** — how the pieces fit together, the security model, and optional resilience patterns.
+- **[Client surfaces](docs/client-surfaces.md)** — per-surface configuration for VS Code, the Copilot CLI, and enterprise BYOK on GitHub.com.
 
 ## Where this applies
 
@@ -25,6 +29,9 @@ The proxy is an OpenAI Chat Completions endpoint, so any Copilot BYOK surface ca
 Full per-surface steps are in [docs/client-surfaces.md](docs/client-surfaces.md). Note that BYOK covers chat/agent only — inline code completions always use GitHub-hosted models.
 
 ## Deploy
+
+New here? Follow the **[step-by-step getting started guide](docs/getting-started.md)** for
+prerequisites, parameters, and verification. The short version:
 
 ```bash
 az deployment group create --resource-group <resource-group> --template-file infra/main.bicep --parameters @infra/example.bicepparam
