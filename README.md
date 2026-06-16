@@ -7,7 +7,7 @@ Use this when you want to bring your own model to Copilot but still need to:
 - **Keep backend keys out of clients.** Copilot authenticates to APIM; APIM authenticates to Foundry with managed identity. No Foundry keys in the repo, env vars, or developer machines.
 - **Expose one stable endpoint.** A single OpenAI-compatible URL that works across VS Code, the Copilot CLI, and GitHub.com (enterprise BYOK).
 - **Govern access centrally.** A policy layer for routing, versioning, throttling, and future request transforms — and a single place to swap or upgrade the model.
-- **Stay resilient under load (optional).** Foundry is reached through a named APIM backend entity, so you can opt into a [circuit breaker](docs/reference-architecture.md#backend-resilience-optional) that backs off on `429 Too Many Requests` and honors `Retry-After` — and combine it with a [load-balanced pool](docs/reference-architecture.md#circuit-breaker--load-balanced-pool) to spread traffic across multiple Foundry deployments. Neither is enabled by default.
+- **Stay resilient under load (optional).** Foundry is reached through a named APIM backend entity, so you can opt into a circuit breaker that backs off on `429 Too Many Requests` and honors `Retry-After` — and combine it with a load-balanced pool to spread traffic across multiple Foundry deployments. Neither is enabled by default.
 - **Deploy it repeatably.** Bicep IaC so the same gateway path stands up consistently across dev, test, and prod.
 
 Check out the [reference architecture](docs/reference-architecture.md) for more details on how the pieces fit together.
@@ -55,7 +55,7 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - The Foundry/OpenAI resource is expected to already exist.
 - APIM reaches Foundry through a named **backend entity** (`foundry-backend`) and authenticates with its system-assigned managed identity, which holds the `Cognitive Services OpenAI User` role.
 - The policy validates the client key, attaches the managed-identity token, and routes OpenAI-compatible chat completion calls to the backend entity.
-- **Optional resilience.** The [circuit breaker](docs/reference-architecture.md#backend-resilience-optional) and [load-balanced pool](docs/reference-architecture.md#circuit-breaker--load-balanced-pool) are opt-in and not part of the default deployment; enable them only if you need 429 back-off or multi-deployment fan-out.
+- **Optional resilience.** The circuit breaker and load-balanced pool are opt-in and not part of the default deployment; enable them only if you need 429 back-off or multi-deployment fan-out.
 
 ## Useful docs
 
@@ -64,5 +64,5 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 - [Enterprise — Using your LLM provider API keys with Copilot](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-enterprise/use-your-own-api-keys)
 - [Azure API Management AI gateway](https://learn.microsoft.com/en-us/azure/api-management/genai-gateway-capabilities)
 - [Import a Microsoft Foundry API](https://learn.microsoft.com/en-us/azure/api-management/azure-ai-foundry-api)
-- [Backends in API Management](https://learn.microsoft.com/en-us/azure/api-management/backends)
-- [Set backend service policy](https://learn.microsoft.com/en-us/azure/api-management/set-backend-service-policy)
+- [Circuit Breaker in API Management](https://learn.microsoft.com/en-us/azure/api-management/backends?tabs=portal#circuit-breaker)
+- [Load Balanced Pool in API Management](https://learn.microsoft.com/en-us/azure/api-management/backends?tabs=portal#load-balanced-pool)
