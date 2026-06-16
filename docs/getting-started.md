@@ -137,7 +137,7 @@ Use the `proxyBasePath` from the outputs as `<base-url>` and your `byokClientKey
 
 ```bash
 curl "<base-url>/models" \
-  -H "Authorization: ******"
+  -H "Authorization: Bearer <client-key>"
 ```
 
 You should get an OpenAI-style `{ "object": "list", "data": [ ... ] }` response containing
