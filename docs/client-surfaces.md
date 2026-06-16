@@ -2,7 +2,8 @@
 
 The APIM proxy in this repo is published as an OpenAI **Chat Completions** endpoint at
 `https://<apim-name>.azure-api.net/byok`. Any Copilot surface that supports a
-BYOK / OpenAI-compatible provider can point at it.
+BYOK / OpenAI-compatible provider can point at it. If you haven't deployed the gateway
+yet, follow the [getting started guide](getting-started.md) first.
 
 There are two distinct BYOK paths:
 

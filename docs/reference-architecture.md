@@ -1,5 +1,8 @@
 # Reference architecture
 
+> New to the project? Start with the **[getting started guide](getting-started.md)** to
+> deploy the gateway, then come back here for the design details.
+
 ```mermaid
 flowchart LR
   subgraph Clients["Copilot BYOK surfaces"]
