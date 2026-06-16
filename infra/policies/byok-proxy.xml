@@ -21,14 +21,7 @@
         </return-response>
       </when>
     </choose>
-    <authentication-managed-identity resource="https://cognitiveservices.azure.com/" output-token-variable-name="foundryAccessToken" />
-    <set-header name="Authorization" exists-action="override">
-      <value>@("Bearer " + (string)context.Variables["foundryAccessToken"])</value>
-    </set-header>
     <set-backend-service backend-id="foundry-backend" />
-    <set-query-parameter name="api-version" exists-action="override">
-      <value>{{foundryApiVersion}}</value>
-    </set-query-parameter>
   </inbound>
   <backend>
     <base />
