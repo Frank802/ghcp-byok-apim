@@ -14,7 +14,7 @@ surface at it. For background on how the pieces fit together, see the
 - A `/byok/models` operation that lists your real Foundry deployments in OpenAI
   list-models format, so Copilot's model picker only shows what you've deployed.
 - A single client API key (the `byokClientKey` secret) that callers present as
-  `Authorization: ******
+  `Authorization: Bearer <client-key>`.
 
 ## Prerequisites
 
