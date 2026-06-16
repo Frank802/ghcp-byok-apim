@@ -36,7 +36,11 @@ The Foundry resource is treated as the model host. This keeps model access centr
 
 Because Foundry/Azure OpenAI returns `429 Too Many Requests` with a `Retry-After` header (sometimes hours long) when a deployment is overloaded, the `foundry-backend` entity can carry a [circuit breaker](https://learn.microsoft.com/azure/api-management/backends#circuit-breaker). When the rule trips, APIM stops calling the backend for `tripDuration` and returns `503` to the client instead of hammering an overloaded deployment. Setting `acceptRetryAfter: true` honors the backend's `Retry-After` value.
 
-This is not enabled by default. To turn it on, add a `circuitBreaker` block to the backend in `infra/main.bicep` (bump the backend API version to `2024-06-01-preview` or later for `acceptRetryAfter`):
+None of this is enabled by default. Both patterns below require bumping the backend API version to `2024-06-01-preview` or later (for `acceptRetryAfter`).
+
+### Single backend with circuit breaker
+
+Add a `circuitBreaker` block to the backend in `infra/main.bicep`:
 
 ```bicep
 resource foundryBackend 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = {
@@ -69,10 +73,101 @@ resource foundryBackend 'Microsoft.ApiManagement/service/backends@2024-06-01-pre
 }
 ```
 
+### Circuit breaker + load-balanced pool
+
+For higher availability, spread traffic across several Foundry deployments (for example the same model in two regions, or a PTU deployment plus a pay-as-you-go fallback). Define one **member backend per deployment** — each with its own circuit breaker — then a **pool backend** (`type: 'Pool'`) that load-balances across them. The policy keeps pointing at a single `backend-id`; only the pool name changes.
+
+When a member trips its breaker, the pool routes around it to the remaining healthy members, so a single overloaded deployment no longer fails requests.
+
+```mermaid
+flowchart LR
+  APIM[APIM policy<br/>set-backend-service backend-id=foundry-pool] --> POOL[foundry-pool<br/>type: Pool]
+  POOL -->|priority 1, weight 1| B1[foundry-primary<br/>circuit breaker]
+  POOL -->|priority 1, weight 1| B2[foundry-secondary<br/>circuit breaker]
+  B1 --> D1[Foundry deployment - region A]
+  B2 --> D2[Foundry deployment - region B]
+```
+
+```bicep
+var poolBackendId = 'foundry-pool'
+
+var foundryMembers = [
+  {
+    name: 'foundry-primary'
+    url: '${foundryPrimaryBaseUrl}/openai/deployments/${foundryDeploymentName}'
+  }
+  {
+    name: 'foundry-secondary'
+    url: '${foundrySecondaryBaseUrl}/openai/deployments/${foundryDeploymentName}'
+  }
+]
+
+resource foundryMemberBackends 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = [
+  for member in foundryMembers: {
+    parent: apim
+    name: member.name
+    properties: {
+      title: member.name
+      protocol: 'http'
+      url: member.url
+      circuitBreaker: {
+        rules: [
+          {
+            name: 'foundryOverload'
+            failureCondition: {
+              count: 1
+              interval: 'PT10S'
+              statusCodeRanges: [
+                {
+                  min: 429
+                  max: 429
+                }
+              ]
+            }
+            tripDuration: 'PT1M'
+            acceptRetryAfter: true
+          }
+        ]
+      }
+    }
+  }
+]
+
+resource foundryPool 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = {
+  parent: apim
+  name: poolBackendId
+  properties: {
+    title: 'Microsoft Foundry pool'
+    type: 'Pool'
+    pool: {
+      services: [
+        for (member, i) in foundryMembers: {
+          id: foundryMemberBackends[i].id
+          priority: 1
+          weight: 1
+        }
+      ]
+    }
+  }
+  dependsOn: [
+    foundryMemberBackends
+  ]
+}
+```
+
+Then target the pool in `infra/policies/byok-proxy.xml`:
+
+```xml
+<set-backend-service backend-id="foundry-pool" />
+```
+
+Each member needs the managed identity to hold the `Cognitive Services OpenAI User` role on its own Foundry resource, so extend `modules/foundry-access.bicep` to grant the role on every deployment in the pool.
+
 Notes:
 
-- The circuit breaker is not supported on the **Consumption** tier.
+- The circuit breaker and load-balanced pools are not supported on the **Consumption** tier.
 - Tripping is per gateway instance and approximate; only one rule per backend is supported today.
+- `priority` and `weight` control routing: lower `priority` wins first; `weight` splits traffic among members of equal priority.
 
 ## Repo shape
 

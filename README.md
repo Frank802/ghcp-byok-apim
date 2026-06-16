@@ -7,7 +7,7 @@ Use this when you want to bring your own model to Copilot but still need to:
 - **Keep backend keys out of clients.** Copilot authenticates to APIM; APIM authenticates to Foundry with managed identity. No Foundry keys in the repo, env vars, or developer machines.
 - **Expose one stable endpoint.** A single OpenAI-compatible URL that works across VS Code, the Copilot CLI, and GitHub.com (enterprise BYOK).
 - **Govern access centrally.** A policy layer for routing, versioning, throttling, and future request transforms — and a single place to swap or upgrade the model.
-- **Stay resilient under load.** Foundry is reached through a named APIM backend entity, so you can opt into a [circuit breaker](docs/reference-architecture.md#backend-resilience-optional) that backs off on `429 Too Many Requests` and honors `Retry-After`.
+- **Stay resilient under load.** Foundry is reached through a named APIM backend entity, so you can opt into a [circuit breaker](docs/reference-architecture.md#backend-resilience-optional) that backs off on `429 Too Many Requests` and honors `Retry-After` — and combine it with a [load-balanced pool](docs/reference-architecture.md#circuit-breaker--load-balanced-pool) to spread traffic across multiple Foundry deployments.
 - **Deploy it repeatably.** Bicep IaC so the same gateway path stands up consistently across dev, test, and prod.
 
 Check out the [reference architecture](docs/reference-architecture.md) for more details on how the pieces fit together.
