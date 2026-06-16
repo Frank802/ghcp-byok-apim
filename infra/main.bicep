@@ -48,11 +48,8 @@ param tags object = {}
 var apiId = 'byok-foundry'
 var openApiPath = 'openapi/byok-proxy.openapi.json'
 var policyPath = 'policies/byok-proxy.xml'
-var policyXml = replace(
-  replace(loadTextContent(policyPath), '{{foundryDeploymentName}}', foundryDeploymentName),
-  '{{foundryApiVersion}}',
-  foundryApiVersion
-)
+var backendId = 'foundry-backend'
+var policyXml = replace(loadTextContent(policyPath), '{{foundryApiVersion}}', foundryApiVersion)
 
 resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   name: apimName
@@ -81,9 +78,19 @@ resource api 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
       'https'
     ]
     subscriptionRequired: false
-    serviceUrl: foundryBackendBaseUrl
     format: 'openapi+json'
     value: loadTextContent(openApiPath)
+  }
+}
+
+resource foundryBackend 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = {
+  parent: apim
+  name: backendId
+  properties: {
+    title: 'Microsoft Foundry'
+    description: 'Foundry deployment reached with the APIM managed identity.'
+    protocol: 'http'
+    url: '${foundryBackendBaseUrl}/openai/deployments/${foundryDeploymentName}'
   }
 }
 
@@ -106,6 +113,7 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-05-01-pre
   }
   dependsOn: [
     byokClientKeyNamedValue
+    foundryBackend
   ]
 }
 

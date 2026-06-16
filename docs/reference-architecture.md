@@ -19,7 +19,7 @@ Any Copilot BYOK surface — VS Code, the Copilot CLI, or GitHub.com (enterprise
 talks only to APIM as an OpenAI Chat Completions endpoint. APIM:
 
 - authenticates to the backend with managed identity
-- rewrites the request to the Foundry deployment path
+- routes to a named backend entity (`foundry-backend`) that targets the Foundry deployment
 - appends the required `api-version`
 - preserves the OpenAI-compatible payload shape
 
@@ -34,15 +34,15 @@ The Foundry resource is treated as the model host. This keeps model access centr
 
 ## Repo shape
 
-- `infra/main.bicep` provisions the gateway and access path.
+- `infra/main.bicep` provisions the gateway, the `foundry-backend` entity, and the access path.
 - `infra/openapi/byok-proxy.openapi.json` defines the APIM-imported proxy API.
-- `infra/policies/byok-proxy.xml` contains the request rewrite and auth logic.
+- `infra/policies/byok-proxy.xml` validates the client key, attaches the managed-identity token, and routes to the backend entity.
 
 ## Runtime flow
 
 1. A Copilot BYOK surface (VS Code, CLI, or GitHub.com) sends an OpenAI-compatible chat request to APIM.
 2. APIM acquires an Entra token with managed identity.
-3. APIM rewrites the path to the Foundry deployment endpoint.
+3. APIM forwards the request to the `foundry-backend` entity, whose URL targets the Foundry deployment endpoint.
 4. Foundry returns the model response through APIM.
 
 ## Client configuration

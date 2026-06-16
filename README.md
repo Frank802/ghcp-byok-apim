@@ -52,8 +52,8 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 ## Notes
 
 - The Foundry/OpenAI resource is expected to already exist.
-- APIM authenticates to the backend with managed identity and the `Cognitive Services OpenAI User` role.
-- The policy forwards OpenAI-compatible chat completion calls to the Foundry deployment.
+- APIM reaches Foundry through a named **backend entity** (`foundry-backend`) and authenticates with its system-assigned managed identity, which holds the `Cognitive Services OpenAI User` role.
+- The policy validates the client key, attaches the managed-identity token, and routes OpenAI-compatible chat completion calls to the backend entity.
 
 ## Useful docs
 
