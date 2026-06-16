@@ -147,7 +147,7 @@ your Foundry deployment(s). Each `id` is a value you can pass as `model`.
 
 ```bash
 curl "<base-url>/chat/completions" \
-  -H "Authorization: ******" \
+  -H "Authorization: Bearer <client-key>" \
   -H "Content-Type: application/json" \
   -d '{
         "model": "<your-foundry-deployment-name>",
