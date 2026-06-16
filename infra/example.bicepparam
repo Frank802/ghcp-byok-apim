@@ -8,7 +8,6 @@ param apimSkuCapacity = 1
 param foundryAccountName = 'your-foundry-account'
 param foundryAccountResourceGroup = 'your-foundry-resource-group'
 param foundryBackendBaseUrl = 'https://your-foundry-account.openai.azure.com'
-param foundryDeploymentName = 'your-model-deployment'
 param foundryApiVersion = '2024-06-01'
 param foundryDeploymentsApiVersion = '2023-03-15-preview'
 param byokClientKey = 'replace-with-a-strong-secret-key'

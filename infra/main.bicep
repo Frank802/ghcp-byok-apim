@@ -32,9 +32,6 @@ param foundryAccountResourceGroup string = resourceGroup().name
 @description('Backend base URL, for example https://contoso.openai.azure.com.')
 param foundryBackendBaseUrl string
 
-@description('Model deployment name inside the Foundry resource.')
-param foundryDeploymentName string
-
 @description('Azure OpenAI-compatible API version to send to the backend.')
 param foundryApiVersion string = '2024-06-01'
 
@@ -96,7 +93,7 @@ resource foundryBackend 'Microsoft.ApiManagement/service/backends@2023-05-01-pre
     title: 'Microsoft Foundry'
     description: 'Foundry deployment reached with the APIM managed identity.'
     protocol: 'http'
-    url: '${foundryBackendBaseUrl}/openai/deployments/${foundryDeploymentName}'
+    url: '${foundryBackendBaseUrl}/openai/v1'
   }
 }
 
@@ -154,4 +151,4 @@ module foundryAccess 'modules/foundry-access.bicep' = {
 output apimGatewayUrl string = 'https://${apimName}.azure-api.net'
 output proxyBasePath string = 'https://${apimName}.azure-api.net/byok'
 output modelsUrl string = 'https://${apimName}.azure-api.net/byok/models'
-output backendCompletionUrl string = '${foundryBackendBaseUrl}/openai/deployments/${foundryDeploymentName}/chat/completions?api-version=${foundryApiVersion}'
+output backendCompletionUrl string = '${foundryBackendBaseUrl}/openai/v1/chat/completions?api-version=${foundryApiVersion}'
