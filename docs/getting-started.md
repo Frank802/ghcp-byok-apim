@@ -59,7 +59,7 @@ cd ghcp-byok-apim
 ```
 
 Choose a strong secret to use as the client API key. This is the value clients will send
-as their API key (`Authorization: ******; APIM validates it in policy. Generate
+as their API key (`Authorization: Bearer <client-key>`); APIM validates it in policy. Generate
 one however you like, for example:
 
 ```bash
