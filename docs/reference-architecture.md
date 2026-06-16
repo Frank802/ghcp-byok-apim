@@ -32,6 +32,48 @@ The Foundry resource is treated as the model host. This keeps model access centr
 - The managed identity gets the `Cognitive Services OpenAI User` role on the Foundry resource.
 - The backend URL and deployment name are parameterized so the same template works across environments.
 
+## Backend resilience (optional)
+
+Because Foundry/Azure OpenAI returns `429 Too Many Requests` with a `Retry-After` header (sometimes hours long) when a deployment is overloaded, the `foundry-backend` entity can carry a [circuit breaker](https://learn.microsoft.com/azure/api-management/backends#circuit-breaker). When the rule trips, APIM stops calling the backend for `tripDuration` and returns `503` to the client instead of hammering an overloaded deployment. Setting `acceptRetryAfter: true` honors the backend's `Retry-After` value.
+
+This is not enabled by default. To turn it on, add a `circuitBreaker` block to the backend in `infra/main.bicep` (bump the backend API version to `2024-06-01-preview` or later for `acceptRetryAfter`):
+
+```bicep
+resource foundryBackend 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = {
+  parent: apim
+  name: backendId
+  properties: {
+    title: 'Microsoft Foundry'
+    protocol: 'http'
+    url: '${foundryBackendBaseUrl}/openai/deployments/${foundryDeploymentName}'
+    circuitBreaker: {
+      rules: [
+        {
+          name: 'foundryOverload'
+          failureCondition: {
+            count: 1
+            interval: 'PT10S'
+            statusCodeRanges: [
+              {
+                min: 429
+                max: 429
+              }
+            ]
+          }
+          tripDuration: 'PT1M'
+          acceptRetryAfter: true
+        }
+      ]
+    }
+  }
+}
+```
+
+Notes:
+
+- The circuit breaker is not supported on the **Consumption** tier.
+- Tripping is per gateway instance and approximate; only one rule per backend is supported today.
+
 ## Repo shape
 
 - `infra/main.bicep` provisions the gateway, the `foundry-backend` entity, and the access path.
