@@ -32,7 +32,7 @@ The Foundry resource is treated as the model host. This keeps model access centr
 
 - No API keys are stored in the repo.
 - APIM uses Microsoft Entra ID managed identity for backend auth.
-- The managed identity gets the `Cognitive Services OpenAI User` role on the Foundry resource.
+- The managed identity gets the `Foundry User` role on the Foundry resource.
 - The backend URL and deployment name are parameterized so the same template works across environments.
 
 ## Backend resilience (optional)
@@ -164,7 +164,7 @@ Then target the pool in `infra/policies/byok-proxy.xml`:
 <set-backend-service backend-id="foundry-pool" />
 ```
 
-Each member needs the managed identity to hold the `Cognitive Services OpenAI User` role on its own Foundry resource, so extend `modules/foundry-access.bicep` to grant the role on every deployment in the pool.
+Each member needs the managed identity to hold the `Foundry User` role on its own Foundry resource, so extend `modules/foundry-access.bicep` to grant the role on every deployment in the pool.
 
 Notes:
 

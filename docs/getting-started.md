@@ -110,7 +110,7 @@ az deployment group create \
 ```
 
 The deployment provisions the APIM instance, imports the proxy API, applies the policies,
-and grants APIM's system-assigned managed identity the **`Cognitive Services OpenAI User`**
+and grants APIM's system-assigned managed identity the **`Foundry User`**
 role on your Foundry account.
 
 When it finishes, read the outputs — they give you the URLs you'll need next:

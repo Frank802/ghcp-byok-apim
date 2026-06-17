@@ -61,7 +61,7 @@ How the project maps to the public GitHub Copilot BYOK documentation:
 ## Notes
 
 - The Foundry/OpenAI resource is expected to already exist.
-- APIM reaches Foundry through a named **backend entity** (`foundry-backend`) and authenticates with its system-assigned managed identity, which holds the `Cognitive Services OpenAI User` role.
+- APIM reaches Foundry through a named **backend entity** (`foundry-backend`) and authenticates with its system-assigned managed identity, which holds the `Foundry User` role.
 - The policy validates the client key, attaches the managed-identity token, and routes OpenAI-compatible chat completion calls to the backend entity.
 - The `/models` operation is served entirely within APIM: it queries the Foundry account's deployments with the managed identity and returns them in OpenAI list-models format, so Copilot's model picker reflects the real deployments rather than the whole catalog. Tune the lookup with `foundryDeploymentsApiVersion` (default `2023-03-15-preview`).
 - **Optional resilience.** The circuit breaker and load-balanced pool are opt-in and not part of the default deployment; enable them only if you need 429 back-off or multi-deployment fan-out.
