@@ -2,13 +2,13 @@
   <inbound>
     <base />
     <set-variable name="presentedKey" value="@{
-        var auth = context.Request.Headers.GetValueOrDefault("Authorization", "");
-        return auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            ? auth.Substring("Bearer ".Length).Trim()
-            : "";
+        var auth = context.Request.Headers.GetValueOrDefault(&quot;Authorization&quot;, &quot;&quot;);
+        return auth.StartsWith(&quot;Bearer &quot;, StringComparison.OrdinalIgnoreCase)
+            ? auth.Substring(&quot;Bearer &quot;.Length).Trim()
+            : &quot;&quot;;
     }" />
     <choose>
-      <when condition="@(string.IsNullOrEmpty((string)context.Variables["presentedKey"]) || (string)context.Variables["presentedKey"] != "{{byokClientKey}}")">
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables[&quot;presentedKey&quot;]) || (string)context.Variables[&quot;presentedKey&quot;] != &quot;{{byokClientKey}}&quot;)">
         <return-response>
           <set-status code="401" reason="Unauthorized" />
           <set-header name="WWW-Authenticate" exists-action="override">
