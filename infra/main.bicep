@@ -55,7 +55,7 @@ var modelsPolicyPath = 'policies/models.xml'
 var backendId = 'foundry-backend'
 var policyXml = replace(loadTextContent(policyPath), '{{foundryApiVersion}}', foundryApiVersion)
 var foundryDeploymentsUrl = '${foundryBackendBaseUrl}/openai/deployments?api-version=${foundryDeploymentsApiVersion}'
-var modelsPolicyXml = replace(loadTextContent(modelsPolicyPath), '{{foundryDeploymentsUrl}}', foundryDeploymentsUrl)
+var modelsPolicyXml = loadTextContent(modelsPolicyPath)
 
 resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   name: apimName
@@ -97,6 +97,12 @@ resource foundryBackend 'Microsoft.ApiManagement/service/backends@2023-05-01-pre
     description: 'Foundry deployment reached with the APIM managed identity.'
     protocol: 'http'
     url: '${foundryBackendBaseUrl}/openai/v1'
+    resourceId: '${environment().resourceManager}subscriptions/${subscription().subscriptionId}/resourceGroups/${foundryAccountResourceGroup}/providers/Microsoft.CognitiveServices/accounts/${foundryAccountName}'
+    credentials: {
+      managedIdentity: {
+        resource: 'https://cognitiveservices.azure.com'
+      }
+    }
   }
 }
 
@@ -107,6 +113,16 @@ resource byokClientKeyNamedValue 'Microsoft.ApiManagement/service/namedValues@20
     displayName: 'byokClientKey'
     secret: true
     value: byokClientKey
+  }
+}
+
+resource foundryDeploymentsUrlNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
+  parent: apim
+  name: 'foundryDeploymentsUrl'
+  properties: {
+    displayName: 'foundryDeploymentsUrl'
+    secret: false
+    value: foundryDeploymentsUrl
   }
 }
 
@@ -137,6 +153,7 @@ resource listModelsPolicy 'Microsoft.ApiManagement/service/apis/operations/polic
   }
   dependsOn: [
     byokClientKeyNamedValue
+    foundryDeploymentsUrlNamedValue
     foundryBackend
     apiPolicy
   ]
