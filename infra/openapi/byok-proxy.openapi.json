@@ -94,6 +94,68 @@
           }
         }
       }
+    },
+    "/responses": {
+      "post": {
+        "operationId": "createResponse",
+        "summary": "Proxy a Responses API request",
+        "description": "OpenAI Responses API — used by newer Copilot models instead of /chat/completions. The request body is forwarded as-is to the Foundry backend at /openai/v1/responses.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string",
+                    "description": "The Foundry deployment name to target."
+                  },
+                  "input": {
+                    "description": "Text prompt or array of input items.",
+                    "oneOf": [
+                      { "type": "string" },
+                      { "type": "array", "items": { "type": "object" } }
+                    ]
+                  },
+                  "instructions": {
+                    "type": "string",
+                    "description": "System-level instructions (equivalent to a system message)."
+                  },
+                  "tools": {
+                    "type": "array",
+                    "items": { "type": "object" }
+                  },
+                  "stream": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "model",
+                  "input"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful Responses API response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
