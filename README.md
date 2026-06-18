@@ -1,6 +1,6 @@
 # ghcp-byok-apim
 
-Put Azure API Management in front of a Microsoft Foundry-hosted model so GitHub Copilot can use it through BYOK.
+A reference implementation for serving your own Microsoft Foundry model to GitHub Copilot, with Azure API Management providing centralized authentication, routing, and governance — built on Copilot's BYOK capability.
 
 > **Intended scenario.** This gateway exposes a **single, shared model endpoint and credential**. It is designed primarily for **Enterprise BYOK** — a centralized, one-time provider configuration an enterprise owner registers on GitHub.com that serves every member across GitHub.com, the CLI, and IDEs. Because access is centralized behind one credential, the gateway does **not** distinguish individual users out of the box (e.g., for per-user chargeback or attribution). The individual surfaces (VS Code, Copilot CLI) can point at the same endpoint for development and testing, but per-user identity is not a goal of this design.
 
