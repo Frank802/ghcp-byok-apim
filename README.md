@@ -2,6 +2,8 @@
 
 Put Azure API Management in front of a Microsoft Foundry-hosted model so GitHub Copilot can use it through BYOK.
 
+> **Intended scenario.** This gateway exposes a **single, shared model endpoint and credential**. It is designed primarily for **Enterprise BYOK** — a centralized, one-time provider configuration an enterprise owner registers on GitHub.com that serves every member across GitHub.com, the CLI, and IDEs. Because access is centralized behind one credential, the gateway does **not** distinguish individual users out of the box (e.g., for per-user chargeback or attribution). The individual surfaces (VS Code, Copilot CLI) can point at the same endpoint for development and testing, but per-user identity is not a goal of this design.
+
 Use this when you want to bring your own model to Copilot but still need to:
 
 - **Keep backend keys out of clients.** Copilot authenticates to APIM; APIM authenticates to Foundry with managed identity. No Foundry keys in the repo, env vars, or developer machines.

@@ -10,6 +10,8 @@ There are two distinct BYOK paths:
 - **Individual BYOK** — a single user adds the endpoint in VS Code or the CLI. Per-user, no admin required.
 - **Enterprise BYOK** — an enterprise admin registers the endpoint once on GitHub.com; the models then appear for the whole org across GitHub.com, the CLI, and IDEs. (Public preview.)
 
+> **Intended scenario.** This gateway uses a **single, shared endpoint and credential** and is designed primarily for the **Enterprise BYOK** path — one centralized configuration for the whole org. Access is centralized behind one credential, so it does **not** identify individual users (e.g., for per-user chargeback). The individual surfaces below can use the same endpoint for development and testing.
+
 ## Summary
 
 | Surface | BYOK path | Provider option | Point it here |

@@ -16,6 +16,16 @@ flowchart LR
   FOUNDRY --> MODEL[Hosted model deployment]
 ```
 
+## Intended scenario
+
+This gateway exposes a **single, shared model endpoint and credential**, and is designed
+primarily for **Enterprise BYOK**: a centralized, one-time provider configuration an
+enterprise owner registers on GitHub.com that serves every member across GitHub.com, the
+CLI, and IDEs. Access is intentionally centralized behind one credential, so the gateway
+does **not** distinguish individual users (e.g., for per-user chargeback or attribution).
+The individual surfaces (VS Code, Copilot CLI) can use the same endpoint for development
+and testing, but per-user identity is out of scope for this design.
+
 ## Design
 
 Any Copilot BYOK surface — VS Code, the Copilot CLI, or GitHub.com (enterprise BYOK) —
