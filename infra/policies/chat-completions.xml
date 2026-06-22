@@ -1,0 +1,36 @@
+<policies>
+  <inbound>
+    <base />
+    <set-body>@{
+        var body = context.Request.Body.As<JObject>(preserveContent: true);
+
+        var tools = body["tools"] as JArray;
+        if (tools != null)
+        {
+            foreach (var tool in tools)
+            {
+                var fn = tool?["function"] as JObject;
+                if (fn != null)
+                {
+                    var strictToken = fn["strict"];
+                    if (strictToken == null || strictToken.Type == JTokenType.Null)
+                    {
+                        fn["strict"] = false;
+                    }
+                }
+            }
+        }
+
+        return body.ToString();
+    }</set-body>
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>

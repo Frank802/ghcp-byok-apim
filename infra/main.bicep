@@ -52,10 +52,12 @@ var apiId = 'byok-foundry'
 var openApiPath = 'openapi/byok-proxy.openapi.json'
 var policyPath = 'policies/byok-proxy.xml'
 var modelsPolicyPath = 'policies/models.xml'
+var chatCompletionsPolicyPath = 'policies/chat-completions.xml'
 var backendId = 'foundry-backend'
 var policyXml = replace(loadTextContent(policyPath), '{{foundryApiVersion}}', foundryApiVersion)
 var foundryDeploymentsUrl = '${foundryBackendBaseUrl}/openai/deployments?api-version=${foundryDeploymentsApiVersion}'
 var modelsPolicyXml = loadTextContent(modelsPolicyPath)
+var chatCompletionsPolicyXml = loadTextContent(chatCompletionsPolicyPath)
 
 resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   name: apimName
@@ -154,6 +156,25 @@ resource listModelsPolicy 'Microsoft.ApiManagement/service/apis/operations/polic
   dependsOn: [
     byokClientKeyNamedValue
     foundryDeploymentsUrlNamedValue
+    foundryBackend
+    apiPolicy
+  ]
+}
+
+resource chatCompletionsOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' existing = {
+  parent: api
+  name: 'createChatCompletion'
+}
+
+resource chatCompletionsPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2023-05-01-preview' = {
+  parent: chatCompletionsOperation
+  name: 'policy'
+  properties: {
+    format: 'xml'
+    value: chatCompletionsPolicyXml
+  }
+  dependsOn: [
+    byokClientKeyNamedValue
     foundryBackend
     apiPolicy
   ]
